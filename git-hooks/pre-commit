@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# =============================================================================
+# git-hooks/pre-commit
+#
+# Pre-commit hook: validates that OutboxEntry schema changes are paired
+# with a migration file. Prevents schema drift from entering the repo.
+#
+# Install:
+#   cp git-hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+# =============================================================================
+
+set -euo pipefail
+
+SCHEMA_FILE="src/models/OutboxEntry.js"
+MIGRATIONS_DIR="scripts/migrations"
+
+# ── Check if OutboxEntry.js is staged ────────────────────────────────────────
+if git diff --cached --name-only | grep -q "^${SCHEMA_FILE}$"; then
+  echo "[pre-commit] OutboxEntry schema changed — checking for migration..."
+
+  # Count staged migration files
+  staged_migrations=$(git diff --cached --name-only | grep -c "^${MIGRATIONS_DIR}/" || true)
+
+  if [ "$staged_migrations" -eq 0 ]; then
+    echo ""
+    echo "  ❌ ERROR: OutboxEntry.js was modified but no migration file was staged."
+    echo ""
+    echo "  Schema changes require a migration file in scripts/migrations/."
+    echo "  Create: scripts/migrations/00N_your_change_description.js"
+    echo "  Then:   git add scripts/migrations/00N_*.js"
+    echo ""
+    exit 1
+  else
+    echo "  ✅ Schema change paired with $staged_migrations migration file(s)"
+  fi
+fi
+
+# ── Validate JSON in package.json ─────────────────────────────────────────────
+if git diff --cached --name-only | grep -q "package.json"; then
+  if ! node -e "require('./package.json')" 2>/dev/null; then
+    echo "  ❌ package.json is invalid JSON"
+    exit 1
+  fi
+fi
+
+exit 0
