@@ -1,6 +1,3 @@
-/**
- * Users API Routes
- */
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { User } = require('../models/User');
@@ -9,7 +6,6 @@ const { OutboxService } = require('../services/outboxService');
 const router = express.Router();
 const outboxService = new OutboxService();
 
-// POST /api/users — Register a new user
 router.post('/', async (req, res, next) => {
   try {
     const { email, name, role } = req.body;
@@ -48,7 +44,6 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// GET /api/users/:userId
 router.get('/:userId', async (req, res, next) => {
   try {
     const user = await User.findOne({ userId: req.params.userId });
@@ -57,6 +52,13 @@ router.get('/:userId', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+router.get('/', async (req, res, next) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 }).limit(50);
+    res.json({ users, total: users.length });
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

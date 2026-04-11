@@ -1,9 +1,6 @@
-/**
- * Outbox Pattern Implementation - Main Application
- * Express + MongoDB + Reliable Event Publishing
- */
 const express = require('express');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const orderRoutes = require('./routes/orders');
 const userRoutes = require('./routes/users');
@@ -13,16 +10,14 @@ const { requestLogger } = require('./middleware/requestLogger');
 
 const app = express();
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(requestLogger);
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/outbox', outboxRoutes);
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -31,7 +26,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ─── Error Handler ────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
 module.exports = app;
